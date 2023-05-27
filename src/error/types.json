@@ -1,0 +1,11 @@
+{
+"notfound": "The error was not found.",
+"routerr": "An error occurred while obtaining the route",
+"login": "An error occurred while logging in with the client.",
+"slasherr": "An error occurred while creating the application commands.",
+"missargs": "Lack of arguments.",
+"loaderr": "The loader type is not valid.",
+"slashediterr": "Error when performing an action on an application command",
+"cantdeleteslash": "An error occurred while deleting the application commands.",
+"cantcreatecommand": "An error cocurred while creating the command in te collection"
+}

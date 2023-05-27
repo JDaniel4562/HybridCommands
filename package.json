@@ -1,0 +1,31 @@
+{
+  "name": "hybridcommands",
+  "version": "1.0.0",
+  "description": "This package has been created to help you in making a bot helping with the loaders of commands and introducing you in to the slashes!",
+  "main": "src/main.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JDaniel4562/HybridCommands.git"
+  },
+  "keywords": [
+    "discord"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JDaniel4562/HybridCommands/issues"
+  },
+  "homepage": "https://github.com/JDaniel4562/HybridCommands#readme",
+  "devDependencies": {
+    "@types/ms": "^0.7.31",
+    "@types/node": "^20.2.5",
+    "ts-node": "^10.9.1",
+    "typecript": "^0.0.1-security"
+  },
+  "dependencies": {
+    "discord.js": "^14.11.0"
+  }
+}
