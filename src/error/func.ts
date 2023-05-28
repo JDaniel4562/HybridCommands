@@ -6,10 +6,10 @@ export type ErrorTypes = "notfound"|"routerr"|"login"|"slasherr"|"missargs"|"loa
 export default (type: ErrorTypes, exit:boolean = true) => {
     switch(exit){
         case true: {
-            console.error(`[${name.toUpperCase} ERROR: ${type.toUpperCase()}] ${json[type]}`,0)
+            console.error(`[${name.toUpperCase()} ERROR: ${type.toUpperCase()}] ${json[type]}`,0)
         }
         case false: {
-            console.log(`[${name.toUpperCase} ERROR: ${type.toUpperCase()}] ${json[type]}`)
+            console.log(`[${name.toUpperCase()} ERROR: ${type.toUpperCase()}] ${json[type]}`)
         }
     }
 }
