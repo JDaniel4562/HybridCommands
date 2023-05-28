@@ -2,7 +2,7 @@
   "name": "hybridcommands",
   "version": "1.0.0",
   "description": "This package has been created to help you in making a bot helping with the loaders of commands and introducing you in to the slashes!",
-  "main": "src/main.ts",
+  "main": "./src/main.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

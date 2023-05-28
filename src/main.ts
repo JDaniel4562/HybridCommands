@@ -15,8 +15,8 @@ export type DataBuilderOptions = {
 export type CommandBuilderOptions = {
     data: DataBuilder
     custom?: CustomDataBuilder
-    params: ParamsBuilder
-    code: (ctx: Context | Settings["customContext"]) => Promise<any>
+    params?: ParamsBuilder
+    code: (ctx: Context | Settings["context"]) => Promise<any>
     normal: boolean
     slash: boolean
 }
@@ -46,6 +46,9 @@ export class DataBuilder {
         this.aliases?.push(input)
         return this
     }
+    public adapt(){
+        return new SlashCommandBuilder().setName((this.name as string)).setDescription((this.description as string))
+    }
 }
 
 export class CustomDataBuilder {
@@ -59,14 +62,14 @@ export class CustomDataBuilder {
 export class CommandBuilder {
     data: DataBuilder
     custom?: CustomDataBuilder
-    params: ParamsBuilder
-    code: (ctx: Context | Settings["customContext"]) => Promise<any>
+    params?: ParamsBuilder
+    code: (ctx: Context | Settings["context"]) => Promise<any>
     normal: boolean
     slash: boolean
     constructor(options: CommandBuilderOptions){
         this.data = options.data
-        this.custom = options.custom
-        this.params = options.params
+        this.custom = options.custom || {}
+        this.params = options.params || undefined
         this.normal = options.normal
         this.slash = options.slash
         this.code = options.code
@@ -87,7 +90,7 @@ export class CommandBuilder {
         this.slash?false:true
         return this
     }
-    public setCode(code: (ctx: Context | Settings["customContext"]) => Promise<any>){
+    public setCode(code: (ctx: Context | Settings["context"]) => Promise<any>){
         this.code = code
         return this
     }
@@ -103,7 +106,7 @@ export type SettingOptions = {
     debug: boolean
     collection: Collection<string, CommandBuilder>
     slashesBody: RESTPostAPIChatInputApplicationCommandsJSONBody[]
-    customContext?: any
+    context?: any
 }
 
 export class Settings {
@@ -114,7 +117,7 @@ export class Settings {
     debug: boolean
     collection: Collection<string, CommandBuilder>
     slashesBody: RESTPostAPIChatInputApplicationCommandsJSONBody[]
-    customContext?: any
+    context?: any
     constructor(options: SettingOptions){
         this.path = options.path;
         this.client = options.client;
@@ -123,7 +126,7 @@ export class Settings {
         this.debug = options.debug
         this.collection = options.collection
         this.slashesBody = options.slashesBody
-        this.customContext = options.customContext
+        this.context = options.context
     }
 
     public async setCollection(path: string = this.path) {
@@ -137,13 +140,8 @@ export class Settings {
             let command: CommandBuilder = require(join(mdir, path, file)).command
             if(!command!.data!.name) { this.debug?console.log('|-----------------------------------|\n' + `| ` + `Error Loading!` + `\n| File: ${join(path, file)}`):console.log(`Error loading: ${join(path, file)}`); continue};
             this.collection.set(command.data.name,command)
-            this.slashesBody.push((command.params.adapt() as SlashCommandBuilder).toJSON())
-            /**
-            if (command.slash && !slashes!.find((x) => x.name === command.data.name)) {
-                this.client.application!.commands.create({name: command.data.name,description: (command.data.description as string)})
-            }
-            const slashes = await this.client.application!.commands.fetch().catch(() => null)
-             */
+            let toPush = command.params || command.data
+            this.slashesBody.push((toPush.adapt() as SlashCommandBuilder).toJSON())
             this.debug?console.log('|-----------------------------------|\n' + `| ` + `Command Loaded!` + `\n| Name: ${command.data.name} \n| From: ${join(path, file)}`):null
         }
         this.debug?console.log('|-----------------------------------|'):null
@@ -168,8 +166,9 @@ export class Settings {
     public async setCommand(command: CommandBuilder): Promise<CommandBuilder | void> {
         if(!command.data.name) return error('cantcreatecommand', false)
         const commands = await this.client.application!.commands.fetch()
-        if (!commands.find((x) => x.name === (command.params.adapt() as SlashCommandBuilder).toJSON().name)) {
-            this.client.application!.commands.create((command.params.adapt() as SlashCommandBuilder).toJSON())
+        let toPush = command.params || command.data
+        if (!commands.find((x) => x.name === (toPush.adapt() as SlashCommandBuilder).toJSON().name)) {
+            this.client.application!.commands.create((toPush.adapt() as SlashCommandBuilder).toJSON())
         }
         this.collection.set((command.data.name as string), command)
         return command
