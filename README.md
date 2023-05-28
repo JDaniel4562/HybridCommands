@@ -80,7 +80,7 @@ const params = new ParamsBuilder({
     slash: data.adapt(),
     params: []
 })
-module.exports = new CommandBuilder({
+module.exports['command'] = new CommandBuilder({
     data: data,
     custom: customData,
     normal: true,
