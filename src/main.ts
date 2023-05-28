@@ -288,6 +288,7 @@ export class ParamsBuilder {
         this.slash = options.slash
         this.params = options.params
     }
+    
     public adapt(){
         if(!this.slash.name) return error('missargs')
         if(!this.slash.description) return error('missargs')
@@ -334,6 +335,7 @@ export class ParamsBuilder {
         }
         return res
     }
+
     public addParam(name: string, description: string, required: boolean, type: ParamsTypes){
         let obj: ParamObject = {
             name,
