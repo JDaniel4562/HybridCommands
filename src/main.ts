@@ -1,7 +1,7 @@
 import { lstatSync, readdirSync } from 'fs'
 import { join } from 'path'
 import error from './error/func'
-import { SlashCommandBuilder,ChatInputCommandInteraction, Message, GuildMember, Client,BaseGuildTextChannel,Guild, APIInteractionGuildMember, CommandInteractionOption,Collection,Embed,AttachmentBuilder,Attachment,BufferResolvable,ActionRowBuilder,ActionRow,AttachmentPayload, MessageEditOptions, REST, Routes, RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js'
+import { SlashCommandBuilder,ChatInputCommandInteraction, Message, GuildMember, Client,BaseGuildTextChannel,Guild, APIInteractionGuildMember, CommandInteractionOption,Collection,Embed,AttachmentBuilder,Attachment,BufferResolvable,ActionRowBuilder,ActionRow,AttachmentPayload, MessageEditOptions, REST, Routes, RESTPostAPIChatInputApplicationCommandsJSONBody,SlashCommandAttachmentOption,SlashCommandBooleanOption,SlashCommandChannelOption,SlashCommandIntegerOption,SlashCommandMentionableOption,SlashCommandUserOption,SlashCommandNumberOption,SlashCommandRoleOption,SlashCommandStringOption } from 'discord.js'
 import {EmbedBuilder} from '@discordjs/builders'
 import {APIEmbed,APIActionRowComponent} from 'discord-api-types/v10'
 
@@ -15,6 +15,7 @@ export type DataBuilderOptions = {
 export type CommandBuilderOptions = {
     data: DataBuilder
     custom?: CustomDataBuilder
+    params: ParamsBuilder
     code: (ctx: Context | Settings["customContext"]) => Promise<any>
     normal: boolean
     slash: boolean
@@ -58,20 +59,17 @@ export class CustomDataBuilder {
 export class CommandBuilder {
     data: DataBuilder
     custom?: CustomDataBuilder
+    params: ParamsBuilder
     code: (ctx: Context | Settings["customContext"]) => Promise<any>
     normal: boolean
     slash: boolean
     constructor(options: CommandBuilderOptions){
         this.data = options.data
         this.custom = options.custom
+        this.params = options.params
         this.normal = options.normal
         this.slash = options.slash
         this.code = options.code
-    }
-    public slashConv(){
-        if(!this.data.name) return error('missargs')
-        if(!this.data.description) return error('missargs')
-        return new SlashCommandBuilder().setName(this.data.name).setDescription(this.data.description)
     }
     public setData(data: DataBuilder){
         this.data = data
@@ -139,7 +137,7 @@ export class Settings {
             let command: CommandBuilder = require(join(mdir, path, file)).command
             if(!command!.data!.name) { this.debug?console.log('|-----------------------------------|\n' + `| ` + `Error Loading!` + `\n| File: ${join(path, file)}`):console.log(`Error loading: ${join(path, file)}`); continue};
             this.collection.set(command.data.name,command)
-            this.slashesBody.push((command.slashConv() as SlashCommandBuilder).toJSON())
+            this.slashesBody.push((command.params.adapt() as SlashCommandBuilder).toJSON())
             /**
             if (command.slash && !slashes!.find((x) => x.name === command.data.name)) {
                 this.client.application!.commands.create({name: command.data.name,description: (command.data.description as string)})
@@ -156,18 +154,23 @@ export class Settings {
         try {
             await this.client.application!.commands.fetch()
             let x = this.client.application!.commands.cache.find((x) => x.name === name)
+            this.collection.delete(name)
             return x!.delete()
         }catch(e) {
             error("cantdeleteslash")
         }
     }
 
-    getCommand(search: string): CommandBuilder | undefined {
+    public getCommand(search: string): CommandBuilder | undefined {
         return this.collection.get(search) || this.collection.find(c => c.data.aliases?.includes(search))
     }
 
-    setCommand(command: CommandBuilder): CommandBuilder | void {
+    public async setCommand(command: CommandBuilder): Promise<CommandBuilder | void> {
         if(!command.data.name) return error('cantcreatecommand', false)
+        const commands = await this.client.application!.commands.fetch()
+        if (!commands.find((x) => x.name === (command.params.adapt() as SlashCommandBuilder).toJSON().name)) {
+            this.client.application!.commands.create((command.params.adapt() as SlashCommandBuilder).toJSON())
+        }
         this.collection.set((command.data.name as string), command)
         return command
     }
@@ -265,5 +268,80 @@ export class Context {
     }
     public async edit(message: Message<boolean>, options: editOptions | string){
         return await message.edit((options as MessageEditOptions))
+    }
+}
+
+//Params Builder
+export type ParamsBuilderOptions = {
+    slash: SlashCommandBuilder
+    params: ParamObject[]
+}
+
+export type ParamObject = {name:string,description:string,required:boolean,type:ParamsTypes}
+
+export type ParamsTypes = 'attachment'|'boolean'|'channel'|'integer'|'mention'|'user'|'number'|'role'|'string'
+
+export class ParamsBuilder {
+    slash: SlashCommandBuilder
+    params: ParamObject[]
+    constructor (options: ParamsBuilderOptions){
+        this.slash = options.slash
+        this.params = options.params
+    }
+    public adapt(){
+        if(!this.slash.name) return error('missargs')
+        if(!this.slash.description) return error('missargs')
+        let res = new SlashCommandBuilder().setName(this.slash.name).setDescription(this.slash.description)
+        for (const param of this.params){
+            switch(param.type){
+                case 'attachment': {
+                    let input = new SlashCommandAttachmentOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addAttachmentOption(input)
+                }
+                case 'boolean': {
+                    let input = new SlashCommandBooleanOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addBooleanOption(input)
+                }
+                case 'channel': {
+                    let input = new SlashCommandChannelOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addChannelOption(input)
+                }
+                case 'integer': {
+                    let input = new SlashCommandIntegerOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addIntegerOption(input)
+                }
+                case 'mention': {
+                    let input = new SlashCommandMentionableOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addMentionableOption(input)
+                }
+                case 'user': {
+                    let input = new SlashCommandUserOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addUserOption(input)
+                }
+                case 'number': {
+                    let input = new SlashCommandNumberOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addNumberOption(input)
+                }
+                case 'role': {
+                    let input = new SlashCommandRoleOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addRoleOption(input)
+                }
+                case 'string': {
+                    let input = new SlashCommandStringOption().setName(param.name).setDescription(param.description).setRequired(param.required)
+                    res.addStringOption(input)
+                }
+            }
+        }
+        return res
+    }
+    public addParam(name: string, description: string, required: boolean, type: ParamsTypes){
+        let obj: ParamObject = {
+            name,
+            description,
+            required,
+            type
+        }
+        this.params.push(obj)
+        return this
     }
 }
